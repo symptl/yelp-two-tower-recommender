@@ -1,8 +1,8 @@
 # Two-Tower Yelp Recommender System
 
-A neural recommender system that predicts user ratings for businesses using text embeddings from review corpora. The architecture employs a two-tower approach where user and business representations are learned from pooled review embeddings, then combined through various prediction head strategies.
+A neural recommender system that predicts user ratings for businesses using text embeddings from review corpora. The architecture employs a two-tower approach where user and business representations are learned from pooled review embeddings, then combined through various prediction head strategies to implement content-based filtering.
 
-The system achieves approximately 80% RMSE reduction compared to matrix factorization baselines, demonstrating the value of semantic text representations for collaborative filtering tasks.
+The system achieves approximately 80% RMSE reduction compared to matrix factorization baselines, demonstrating the value of semantic text representations as a substitute for collaborative filtering.
 
 The model architecture diagram is available at the end of this readme.
 
@@ -114,23 +114,37 @@ Both towers pass through projection layers before combination. The projection di
 
 **Training Configuration:**
 
-Low learning rates (1e-6 to 3e-7) with extended epochs (200-400) to clearly observe training dynamics and overfitting behavior. Adam optimizer with optional L2 regularization and dropout.
+Low learning rates (5e-7 to 3e-7) with extended epochs (300-400) to clearly observe training dynamics and overfitting behavior. Adam optimizer with optional L2 regularization and dropout.
 
-**Results Summary:**
+**Baseline:**
 
-| Encoder | Variant | Best Strategy | Validation RMSE |
-|---------|---------|---------------|-----------------|
-| Word2Vec | A | Dot Product | 0.947 |
-| SBERT 6-Layer | B | Dot Product | 0.941 |
-| SBERT 12-Layer | B | FFNN | 0.937 |
-| JINA | B | FFNN | 0.949 |
+Mean predictor using training set average achieves validation RMSE of 0.9642.
+
+**FFNN Results:**
+
+| Encoder | Variant A (Pooled Tags) | Variant B (Concat Tags) |
+|---------|-------------------------|-------------------------|
+| Word2Vec (300d) | 0.9481 | 0.9280 |
+| SBERT 6-Layer (384d) | 0.9343 | 0.9308 |
+| SBERT 12-Layer (384d) | 0.9411 | 0.9193 |
+| JINA (768d) | 0.9628 | 0.9447 |
+
+**Dot Product Results:**
+
+| Encoder | Variant A (Pooled Tags) | Variant B (Concat Tags) |
+|---------|-------------------------|-------------------------|
+| Word2Vec (300d) | — | 0.9239 |
+| SBERT 6-Layer (384d) | 0.9355 | 0.9266 |
+| SBERT 12-Layer (384d) | 0.9368 | 0.9257 |
+| JINA (768d) | 0.9648 | 0.9350 |
 
 **Key Observations:**
 
-- Concatenated category tags (Variant B) typically yields ~0.02 RMSE improvement
-- JINA surprisingly underperforms despite larger capacity, possibly due to ALiBi positional encodings
-- Minimal improvement over baseline mean predictor reflects the concentrated rating distribution
-- Best results come from 12-Layer SBERT with FFNN prediction head
+- Concatenated category tags (Variant B) consistently yields lower RMSE than pooled tags (Variant A)
+- JINA surprisingly underperforms all other encoders despite larger capacity, possibly due to ALiBi positional encodings
+- Best FFNN result: SBERT 12-Layer with Variant B achieving **0.9193 validation RMSE**
+- Best Dot Product result: Word2Vec with Variant B achieving **0.9239 validation RMSE**
+- Minimal practical improvement over baseline mean predictor reflects the concentrated rating distribution
 
 ---
 
@@ -144,15 +158,44 @@ Learnable embedding vectors are assigned to each user and business ID, concatena
 
 **Implementation:**
 
-Entity IDs from the training set are mapped to indices (with index 0 reserved for OOV entities in validation/test). Embedding dimensions were tested at 8, 16, and 32.
+Entity IDs from the training set are mapped to indices (with index 0 reserved for OOV entities in validation/test). The model architecture was iteratively refined by testing different entity embedding dimensions and prediction head configurations.
 
 **Configuration:**
 
-Uses SBERT 12-Layer with concatenated category tags (Variant B) as the base features. The FFNN architecture is retained from the previous best model.
+Uses SBERT 12-Layer with concatenated category tags (Variant B) as the base features.
 
-**Results:**
+**Entity Embedding Dimension Experiments (FFNN):**
 
-The addition of entity embeddings achieves **0.875 validation RMSE**, a meaningful improvement over the 0.937 achieved without them. This demonstrates that per-entity biases capture information not present in text representations alone.
+| Entity Embedding Dim | Validation RMSE |
+|---------------------|-----------------|
+| 64 | 0.9077 |
+| 128 | 0.9008 |
+| 256 | 0.8890 |
+| 384 | 0.8743 |
+
+**Prediction Head Comparison (384d Entity Embeddings):**
+
+| Strategy | Architecture | Validation RMSE |
+|----------|--------------|-----------------|
+| Dot Product | proj_dim=1152 | 0.8876 |
+| FFNN (small) | hidden=[1152, 144, 18] | 0.8743 |
+| FFNN (small) + GELU | hidden=[1152, 144, 18] | 0.8716 |
+
+**1D Entity Embedding Ablation:**
+
+To assess how much improvement comes from simple per-entity bias versus learned semantic interactions:
+
+| Strategy | 1D Entity Embedding RMSE |
+|----------|--------------------------|
+| Dot Product | 0.9243 |
+| FFNN | 0.9157 |
+
+**Best Results:**
+
+- Best FFNN with entity embeddings: **0.8716 validation RMSE** (384d embeddings, GELU activation)
+- Best Dot Product with entity embeddings: **0.8876 validation RMSE** (384d embeddings)
+
+This represents a meaningful improvement over the 0.9193 achieved without entity embeddings, demonstrating that per-entity biases capture information not present in text representations alone.
 
 ---
 
@@ -172,9 +215,9 @@ Basic Matrix Factorization
 
 Matrix factorization achieves **0.847 validation RMSE**, establishing the target for the neural approaches to match or exceed.
 
-**Comparison:**
+**Test Set Comparison:**
 
-The text-embedding approach with entity embeddings (0.875 RMSE) approaches but does not exceed the matrix factorization baseline. However, the text-based approach offers advantages for cold-start scenarios where new users/businesses have review text but limited interaction history.
+The text-embedding approach with entity embeddings on the test set (0.876 RMSE) approaches but does not quite beat the matrix factorization baseline (0.856 RMSE). However, the text-based approach offers advantages for cold-start scenarios where new users/businesses have review text but limited interaction history.
 
 ---
 
