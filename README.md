@@ -2,7 +2,7 @@
 
 A neural recommender system that predicts user ratings for businesses using text embeddings from review corpora. The architecture employs a two-tower approach where user and business representations are learned from pooled review embeddings, then combined through various prediction head strategies to implement content-based filtering.
 
-The system achieves approximately 80% RMSE reduction compared to matrix factorization baselines, demonstrating the value of semantic text representations as a substitute for collaborative filtering.
+The system achieves approximately 80% RMSE reduction compared to matrix factorization baselines, demonstrating the value of semantic text representations as a substitute for collaborative filtering. Productionization of this system would likely be done with a two stage recommender, using the simpler dot product prediction head model/features as the initial trimming step to a smaller subset while the more complex FFNN based model/features are used for reranking on that subset.
 
 The model architecture diagram is available at the end of this readme.
 
@@ -228,6 +228,7 @@ The text-embedding approach with entity embeddings on the test set (0.876 RMSE) 
 - **The rating distribution fundamentally limits performance**—concentration in 3-5 star ratings means even sophisticated models struggle to improve much over mean predictors
 - **Matrix factorization remains competitive** for warm-start scenarios, though text approaches offer cold-start advantages
 - **Larger models aren't always better**—JINA's 768d embeddings and 8K context window underperformed SBERT's 384d embeddings, suggesting model architecture and tuning matter more than raw capacity for this task
+- **Two stage recommender plausible**—with the final configuration using trainable entity embeddings, dot product prediction head is only slightly underperforming FFNN. This favors a two stage recommender with dot product prediction head model used to generate one set of features for quick vector search (through a method like ANN) while the FFNN model and features are used to rerank a trimmed down subset from the first stage. 
 
 
 ## Architecture Diagram
