@@ -2,7 +2,7 @@
 
 A neural recommender system that predicts user ratings for businesses using text embeddings from review corpora. The architecture employs a two-tower approach where user and business representations are learned from pooled review embeddings, then combined through various prediction head strategies to implement content-based filtering.
 
-The system achieves approximately 80% RMSE reduction compared to matrix factorization baselines, demonstrating the value of semantic text representations as a substitute for collaborative filtering. Productionization of this system would likely be done with a two stage recommender, using the simpler dot product prediction head model/features as the initial trimming step to a smaller subset while the more complex FFNN based model/features are used for reranking on that subset.
+The system achieves approximately 80% of the RMSE reduction that is seen with a matrix factorization solution relative to an average rating baseline, demonstrating the value of semantic text representations as a substitute for collaborative filtering. Productionization of this system would likely be done with a two stage recommender, using the simpler dot product prediction head model/features as the initial trimming step to a smaller subset while the more complex FFNN based model/features are used for reranking on that subset.
 
 The model architecture diagram is available at the end of this readme.
 
