@@ -195,7 +195,7 @@ To assess how much improvement comes from simple per-entity bias versus learned 
 - Best FFNN with entity embeddings: **0.8716 validation RMSE** (384d embeddings, GELU activation)
 - Best Dot Product with entity embeddings: **0.8876 validation RMSE** (384d embeddings)
 
-This represents a meaningful improvement over the 0.9193 achieved without entity embeddings, demonstrating that per-entity biases capture information not present in text representations alone.
+This represents a meaningful improvement over the 0.9193 achieved without entity embeddings, demonstrating that per-entity biases capture some information that is not present in text representations alone. However, this effect is much smaller than the semantic interactions modeled with larger embedding dimensions.
 
 ---
 
